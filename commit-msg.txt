@@ -1,0 +1,28 @@
+Phases 1-5 complete: foundation, CSV import, shelf views, manual add, book detail + author graph
+
+Phase 1 - Foundation
+- Next.js 16 + Tailwind v4 + TypeScript scaffold
+- Supabase schema: books, shelf_entries, book_genres, recommendations_cache with RLS
+- Magic-link auth, middleware protecting all routes, empty authenticated dashboard
+
+Phase 2 - CSV import
+- Goodreads CSV parser (BOM, ISBN formula wrapper, date format variants)
+- Batch upsert 50 books/batch with progress bar and import summary
+- 2,610 books imported: 731 read, 1,873 to-read, 6 currently-reading
+
+Phase 3 - Shelf views
+- Sidebar nav with live counts via route group layout
+- Book cover grids (2-6 cols responsive), search, sort 5 ways, pagination (48/page)
+- Two-step Supabase query so cross-shelf badges render correctly
+
+Phase 4 - Manual add flow
+- Floating + FAB on every page
+- Open Library search (top 5 results with covers), bulk-add-by-ISBN tab
+- router.refresh() after add keeps sidebar counts live
+
+Phase 5 - Book detail + author graph
+- /books/[id]: cover, stars, review, metadata, shelf badges, More by author grid
+- /authors/[name]: stats row, all books sorted read-first with shelf badges
+- Author names clickable everywhere; BookCard restructured to avoid nested a tags
+
+Next: Phase 6 - Genre tagging via Claude Haiku

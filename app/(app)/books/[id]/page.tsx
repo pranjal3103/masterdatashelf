@@ -1,0 +1,219 @@
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/server'
+import BookCard from '@/components/book-card'
+
+const SHELF_BADGE: Record<string, { label: string; bg: string; text: string }> = {
+  'read':              { label: 'Read',     bg: '#dcfce7', text: '#15803d' },
+  'to-read':           { label: 'To Read',  bg: '#eff6ff', text: '#2563eb' },
+  'currently-reading': { label: 'Reading',  bg: '#fef3c7', text: '#b45309' },
+  'owned':             { label: 'Owned',    bg: '#f3e8ff', text: '#7c3aed' },
+}
+
+function StarRating({ rating }: { rating: number | null }) {
+  if (!rating || rating < 1) return null
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className="text-lg" style={{ color: i <= rating ? '#f59e0b' : '#e5e7eb' }}>★</span>
+      ))}
+    </div>
+  )
+}
+
+function CoverImage({ src, title }: { src: string | null; title: string }) {
+  if (!src) {
+    return (
+      <div className="w-full aspect-[2/3] rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E8E0D5' }}>
+        <p className="text-sm text-gray-500 p-4 text-center">{title}</p>
+      </div>
+    )
+  }
+  // Using regular img — onError needs client component, cover is best-effort here
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={title} className="w-full aspect-[2/3] object-cover rounded-lg shadow-md" />
+}
+
+export default async function BookDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  const supabase = await createClient()
+
+  const { data: book } = await supabase
+    .from('books')
+    .select('*, shelf_entries(shelf, date_read, date_added, my_rating, my_review, read_count)')
+    .eq('id', id)
+    .single()
+
+  if (!book) notFound()
+
+  // Prefer the 'read' entry for rating/review data; fall back to any entry that has it.
+  const readEntry = book.shelf_entries.find((e: { shelf: string }) => e.shelf === 'read')
+  const anyEntry = book.shelf_entries[0]
+  const primary = readEntry ?? anyEntry
+
+  const rating: number | null = primary?.my_rating ?? null
+  const review: string | null = primary?.my_review ?? null
+  const dateRead: string | null = readEntry?.date_read ?? null
+  const readCount: number = readEntry?.read_count ?? 0
+  const shelves: string[] = book.shelf_entries.map((e: { shelf: string }) => e.shelf)
+
+  // Other books by the same author
+  const { data: otherBooks } = await supabase
+    .from('books')
+    .select('id, title, author_primary, cover_url, shelf_entries(shelf, my_rating)')
+    .eq('author_primary', book.author_primary)
+    .neq('id', id)
+    .limit(24)
+
+  type OtherBook = {
+    id: string
+    title: string
+    author_primary: string
+    cover_url: string | null
+    shelf_entries: { shelf: string; my_rating: number | null }[]
+  }
+
+  return (
+    <main className="p-6 md:p-8 max-w-5xl">
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-6">
+        <Link href="/dashboard" className="hover:text-gray-700 transition-colors">Dashboard</Link>
+        <span>/</span>
+        <span className="text-gray-600 truncate max-w-xs">{book.title}</span>
+      </nav>
+
+      {/* Main layout: cover + metadata */}
+      <div className="flex flex-col sm:flex-row gap-8 mb-10">
+        {/* Cover */}
+        <div className="w-full sm:w-44 shrink-0">
+          <CoverImage src={book.cover_url} title={book.title} />
+        </div>
+
+        {/* Metadata */}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-serif text-gray-900 leading-snug mb-1">{book.title}</h1>
+
+          {/* Author — clickable */}
+          <Link
+            href={`/authors/${encodeURIComponent(book.author_primary)}`}
+            className="text-base font-medium hover:underline transition-colors"
+            style={{ color: '#2C5F2D' }}
+          >
+            {book.author_primary}
+          </Link>
+          {book.additional_authors?.length > 0 && (
+            <span className="text-sm text-gray-400 ml-2">
+              with {book.additional_authors.map((a: string) => (
+                <Link key={a} href={`/authors/${encodeURIComponent(a)}`}
+                  className="hover:underline ml-1" style={{ color: '#2C5F2D' }}>
+                  {a}
+                </Link>
+              ))}
+            </span>
+          )}
+
+          {/* Shelf badges */}
+          {shelves.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {shelves.map((s) => {
+                const b = SHELF_BADGE[s]
+                return b ? (
+                  <span key={s} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{ backgroundColor: b.bg, color: b.text }}>
+                    {b.label}
+                  </span>
+                ) : null
+              })}
+            </div>
+          )}
+
+          {/* Rating */}
+          {rating && rating > 0 && (
+            <div className="mt-3">
+              <StarRating rating={rating} />
+            </div>
+          )}
+
+          {/* Book metadata */}
+          <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm max-w-sm">
+            {book.year_published && (
+              <>
+                <dt className="text-gray-400">Published</dt>
+                <dd className="text-gray-700">{book.year_published}</dd>
+              </>
+            )}
+            {book.pages && (
+              <>
+                <dt className="text-gray-400">Pages</dt>
+                <dd className="text-gray-700">{book.pages.toLocaleString()}</dd>
+              </>
+            )}
+            {book.publisher && (
+              <>
+                <dt className="text-gray-400">Publisher</dt>
+                <dd className="text-gray-700">{book.publisher}</dd>
+              </>
+            )}
+            {dateRead && (
+              <>
+                <dt className="text-gray-400">Date read</dt>
+                <dd className="text-gray-700">
+                  {new Date(dateRead).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  {readCount > 1 && <span className="text-gray-400 ml-1">· {readCount}×</span>}
+                </dd>
+              </>
+            )}
+          </dl>
+        </div>
+      </div>
+
+      {/* Review */}
+      {review && (
+        <section className="mb-10">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My review</h2>
+          <blockquote className="text-gray-700 leading-relaxed whitespace-pre-line border-l-2 pl-4"
+            style={{ borderColor: '#2C5F2D' }}>
+            {review}
+          </blockquote>
+        </section>
+      )}
+
+      {/* Other books by this author */}
+      {otherBooks && otherBooks.length > 0 && (
+        <section>
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+              More by{' '}
+              <Link href={`/authors/${encodeURIComponent(book.author_primary)}`}
+                className="hover:underline normal-case font-semibold text-gray-800">
+                {book.author_primary}
+              </Link>
+            </h2>
+            <Link href={`/authors/${encodeURIComponent(book.author_primary)}`}
+              className="text-xs hover:underline" style={{ color: '#2C5F2D' }}>
+              See all →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {(otherBooks as OtherBook[]).map((b) => (
+              <BookCard
+                key={b.id}
+                id={b.id}
+                title={b.title}
+                author={b.author_primary}
+                coverUrl={b.cover_url}
+                rating={b.shelf_entries[0]?.my_rating ?? null}
+                year={null}
+                shelves={b.shelf_entries.map((e) => e.shelf)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
+  )
+}
