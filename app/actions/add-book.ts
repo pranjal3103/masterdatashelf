@@ -36,27 +36,31 @@ export async function addBookToShelf(
 ): Promise<{ success: boolean; bookId?: string; error?: string }> {
   const supabase = await createClient()
 
-  let bookId: string
+  let bookId: string | undefined
 
+  // 1. Check by ISBN13 (most reliable).
   if (book.isbn13) {
-    // Check for existing book by ISBN13 to avoid duplicates.
+    const { data: existing } = await supabase
+      .from('books').select('id').eq('isbn13', book.isbn13).maybeSingle()
+    if (existing) bookId = existing.id
+  }
+
+  // 2. Fallback: title + author match (catches different-edition duplicates).
+  if (!bookId) {
     const { data: existing } = await supabase
       .from('books')
       .select('id')
-      .eq('isbn13', book.isbn13)
+      .ilike('title', book.title.trim())
+      .ilike('author_primary', book.author_primary.trim())
       .maybeSingle()
+    if (existing) bookId = existing.id
+  }
 
-    if (existing) {
-      bookId = existing.id
-    } else {
-      const { data, error } = await insertBook(supabase, book)
-      if (error) return { success: false, error: error.message }
-      bookId = data.id
-    }
-  } else {
+  // 3. Still not found — insert a new book record.
+  if (!bookId) {
     const { data, error } = await insertBook(supabase, book)
     if (error) return { success: false, error: error.message }
-    bookId = data.id
+    bookId = data!.id
   }
 
   // Upsert the shelf entry — safe to call multiple times.
@@ -67,4 +71,18 @@ export async function addBookToShelf(
   if (shelfError) return { success: false, error: shelfError.message }
   revalidateTag('books', {})
   return { success: true, bookId }
+}
+
+// Add an existing book (by ID) to a new shelf without creating a duplicate book record.
+export async function addShelfEntryToBook(
+  bookId: string,
+  shelf: ShelfType
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('shelf_entries')
+    .upsert({ book_id: bookId, shelf, date_added: new Date().toISOString().split('T')[0] }, { onConflict: 'book_id,shelf' })
+  if (error) return { success: false, error: error.message }
+  revalidateTag('books', {})
+  return { success: true }
 }

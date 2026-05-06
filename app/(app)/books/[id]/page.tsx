@@ -5,6 +5,7 @@ import BookCard from '@/components/book-card'
 import { getShelfBadge } from '@/lib/shelves'
 import CoverImage from '@/components/cover-image'
 import SimilarBooksWidget from '@/components/similar-books-widget'
+import AddToShelfButton from '@/components/add-to-shelf-button'
 import { GENRE_LABELS } from '@/lib/genres'
 import type { Genre } from '@/lib/genres'
 
@@ -127,20 +128,19 @@ export default async function BookDetailPage({
             </span>
           )}
 
-          {/* Shelf badges */}
-          {shelves.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-3">
-              {shelves.map((s) => {
-                const b = getShelfBadge(s)
-                return b ? (
-                  <span key={s} className="text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{ backgroundColor: b.bg, color: b.text }}>
-                    {b.label}
-                  </span>
-                ) : null
-              })}
-            </div>
-          )}
+          {/* Shelf badges + add to shelf */}
+          <div className="flex flex-wrap gap-1.5 mt-3 items-center">
+            {shelves.map((s) => {
+              const b = getShelfBadge(s)
+              return b ? (
+                <span key={s} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{ backgroundColor: b.bg, color: b.text }}>
+                  {b.label}
+                </span>
+              ) : null
+            })}
+            <AddToShelfButton bookId={id} currentShelves={shelves} />
+          </div>
 
           {/* Genre tags */}
           {genres.length > 0 && (
