@@ -1,9 +1,11 @@
 import { redirect } from 'next/navigation'
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/sidebar'
 import AddBookButton from '@/components/add-book-button'
 
-async function getShelfCounts(supabase: Awaited<ReturnType<typeof createClient>>) {
+const getShelfCounts = cache(async () => {
+  const supabase = await createClient()
   const shelves = ['read', 'to-read', 'currently-reading', 'owned'] as const
   const results = await Promise.all(
     shelves.map((shelf) =>
@@ -19,14 +21,14 @@ async function getShelfCounts(supabase: Awaited<ReturnType<typeof createClient>>
     'currently-reading': results[2].count ?? 0,
     owned: results[3].count ?? 0,
   }
-}
+})
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const counts = await getShelfCounts(supabase)
+  const counts = await getShelfCounts()
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: '#FAF7F2' }}>

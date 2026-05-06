@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { revalidateTag } from 'next/cache'
 import type { ParsedBook, ShelfType } from '@/lib/csv/types'
 
 export interface BatchResult {
@@ -164,5 +165,6 @@ export async function importBookBatch(
     }
   }
 
+  revalidateTag('books', {})
   return { added: addedCount, updated: updatedCount, failed }
 }

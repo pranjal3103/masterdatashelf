@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useTransition } from 'react'
+import { GENRES, GENRE_LABELS } from '@/lib/genres'
 
 const SORT_OPTIONS = [
   { value: 'date_added', label: 'Date added' },
@@ -15,10 +16,12 @@ export default function ShelfControls({
   sort,
   order,
   q,
+  genre,
 }: {
   sort: string
   order: string
   q: string
+  genre: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -55,6 +58,19 @@ export default function ShelfControls({
     update('order', order === 'asc' ? 'desc' : 'asc')
   }
 
+  function handleGenreChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (e.target.value) {
+      params.set('genre', e.target.value)
+    } else {
+      params.delete('genre')
+    }
+    params.delete('page')
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3 mb-6">
       <input
@@ -64,6 +80,16 @@ export default function ShelfControls({
         onChange={handleSearch}
         className="flex-1 min-w-48 px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700"
       />
+      <select
+        value={genre}
+        onChange={handleGenreChange}
+        className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-700"
+      >
+        <option value="">All genres</option>
+        {GENRES.map((g) => (
+          <option key={g} value={g}>{GENRE_LABELS[g]}</option>
+        ))}
+      </select>
       <select
         value={sort}
         onChange={(e) => update('sort', e.target.value)}

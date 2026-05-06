@@ -2,13 +2,11 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import BookCard from '@/components/book-card'
-
-const SHELF_BADGE: Record<string, { label: string; bg: string; text: string }> = {
-  'read':              { label: 'Read',     bg: '#dcfce7', text: '#15803d' },
-  'to-read':           { label: 'To Read',  bg: '#eff6ff', text: '#2563eb' },
-  'currently-reading': { label: 'Reading',  bg: '#fef3c7', text: '#b45309' },
-  'owned':             { label: 'Owned',    bg: '#f3e8ff', text: '#7c3aed' },
-}
+import { getShelfBadge } from '@/lib/shelves'
+import CoverImage from '@/components/cover-image'
+import SimilarBooksWidget from '@/components/similar-books-widget'
+import { GENRE_LABELS } from '@/lib/genres'
+import type { Genre } from '@/lib/genres'
 
 function StarRating({ rating }: { rating: number | null }) {
   if (!rating || rating < 1) return null
@@ -21,18 +19,6 @@ function StarRating({ rating }: { rating: number | null }) {
   )
 }
 
-function CoverImage({ src, title }: { src: string | null; title: string }) {
-  if (!src) {
-    return (
-      <div className="w-full aspect-[2/3] rounded-lg flex items-center justify-center" style={{ backgroundColor: '#E8E0D5' }}>
-        <p className="text-sm text-gray-500 p-4 text-center">{title}</p>
-      </div>
-    )
-  }
-  // Using regular img — onError needs client component, cover is best-effort here
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={title} className="w-full aspect-[2/3] object-cover rounded-lg shadow-md" />
-}
 
 export default async function BookDetailPage({
   params,
@@ -42,13 +28,22 @@ export default async function BookDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: book } = await supabase
-    .from('books')
-    .select('*, shelf_entries(shelf, date_read, date_added, my_rating, my_review, read_count)')
-    .eq('id', id)
-    .single()
+  const [{ data: book }, { data: genreRows }] = await Promise.all([
+    supabase
+      .from('books')
+      .select('*, shelf_entries(shelf, date_read, date_added, my_rating, my_review, read_count)')
+      .eq('id', id)
+      .single(),
+    supabase
+      .from('book_genres')
+      .select('genre')
+      .eq('book_id', id)
+      .order('confidence', { ascending: false }),
+  ])
 
   if (!book) notFound()
+
+  const genres = (genreRows ?? []).map((r) => r.genre as Genre)
 
   // Prefer the 'read' entry for rating/review data; fall back to any entry that has it.
   const readEntry = book.shelf_entries.find((e: { shelf: string }) => e.shelf === 'read')
@@ -56,7 +51,18 @@ export default async function BookDetailPage({
   const primary = readEntry ?? anyEntry
 
   const rating: number | null = primary?.my_rating ?? null
-  const review: string | null = primary?.my_review ?? null
+  const rawReview: string | null = primary?.my_review ?? null
+  const review = rawReview
+    ? rawReview
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .trim() || null
+    : null
   const dateRead: string | null = readEntry?.date_read ?? null
   const readCount: number = readEntry?.read_count ?? 0
   const shelves: string[] = book.shelf_entries.map((e: { shelf: string }) => e.shelf)
@@ -80,17 +86,22 @@ export default async function BookDetailPage({
   return (
     <main className="p-6 md:p-8 max-w-5xl">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-6">
+      <nav className="flex items-center gap-2 text-xs text-gray-400 mb-6 animate-fade-in">
         <Link href="/dashboard" className="hover:text-gray-700 transition-colors">Dashboard</Link>
         <span>/</span>
         <span className="text-gray-600 truncate max-w-xs">{book.title}</span>
       </nav>
 
       {/* Main layout: cover + metadata */}
-      <div className="flex flex-col sm:flex-row gap-8 mb-10">
+      <div className="flex flex-col sm:flex-row gap-8 mb-10 animate-fade-in">
         {/* Cover */}
         <div className="w-full sm:w-44 shrink-0">
-          <CoverImage src={book.cover_url} title={book.title} />
+          <CoverImage
+            src={book.cover_url}
+            title={book.title}
+            className="w-full aspect-[2/3] rounded-lg shadow-md"
+            sizes="(max-width: 640px) 100vw, 176px"
+          />
         </div>
 
         {/* Metadata */}
@@ -120,7 +131,7 @@ export default async function BookDetailPage({
           {shelves.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {shelves.map((s) => {
-                const b = SHELF_BADGE[s]
+                const b = getShelfBadge(s)
                 return b ? (
                   <span key={s} className="text-xs px-2 py-0.5 rounded-full font-medium"
                     style={{ backgroundColor: b.bg, color: b.text }}>
@@ -128,6 +139,17 @@ export default async function BookDetailPage({
                   </span>
                 ) : null
               })}
+            </div>
+          )}
+
+          {/* Genre tags */}
+          {genres.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-3">
+              {genres.map((g) => (
+                <span key={g} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                  {GENRE_LABELS[g] ?? g}
+                </span>
+              ))}
             </div>
           )}
 
@@ -180,6 +202,11 @@ export default async function BookDetailPage({
             {review}
           </blockquote>
         </section>
+      )}
+
+      {/* If you liked this — recommendations from unread shelf */}
+      {shelves.includes('read') && (
+        <SimilarBooksWidget bookId={id} />
       )}
 
       {/* Other books by this author */}

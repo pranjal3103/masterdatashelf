@@ -8,6 +8,20 @@ function stripIsbn(raw: string): string | null {
   return stripped || null
 }
 
+// Goodreads stores reviews with HTML like <br /> — convert to plain text.
+function cleanReviewHtml(raw: string): string | null {
+  if (!raw?.trim()) return null
+  return raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim() || null
+}
+
 // Handles YYYY/MM/DD and DD-MM-YYYY (both appear in real exports).
 function parseDate(raw: string): string | null {
   if (!raw?.trim()) return null
@@ -66,7 +80,7 @@ export function parseGoodreadsCSV(csvText: string): ParsedBook[] {
       date_read: parseDate(row['Date Read'] ?? ''),
       date_added: parseDate(row['Date Added'] ?? ''),
       my_rating: parseIntOrNull(row['My Rating'] ?? ''),  // 0 → null via parseIntOrNull
-      my_review: row['My Review']?.trim() || null,
+      my_review: cleanReviewHtml(row['My Review'] ?? ''),
       read_count: parseInt(row['Read Count'] ?? '0', 10) || 0,
     }
   })
