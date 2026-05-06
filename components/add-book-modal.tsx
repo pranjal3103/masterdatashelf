@@ -123,6 +123,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
   const [shelfForResult, setShelfForResult] = useState<Record<string, ShelfType>>({})
   const [addingKey, setAddingKey] = useState<string | null>(null)
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set())
+  const [addError, setAddError] = useState<string | null>(null)
 
   // Bulk tab state
   const [bulkText, setBulkText] = useState('')
@@ -153,6 +154,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
   async function handleAdd(candidate: Candidate) {
     const shelf = shelfForResult[candidate.olKey] ?? 'owned'
     setAddingKey(candidate.olKey)
+    setAddError(null)
     const book: AddBookInput = {
       title: candidate.title,
       author_primary: candidate.author,
@@ -166,7 +168,13 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
     setAddingKey(null)
     if (result.success) {
       setAddedKeys((prev) => new Set([...prev, candidate.olKey]))
-      router.refresh()
+      // Navigate to the shelf where the book was added so it's immediately visible.
+      setTimeout(() => {
+        router.push(`/shelves/${shelf}`)
+        onClose()
+      }, 800)
+    } else {
+      setAddError(result.error ?? 'Failed to add book — please try again.')
     }
   }
 
@@ -276,6 +284,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
               </form>
 
               {searchError && <p className="text-sm text-red-500">{searchError}</p>}
+              {addError && <p className="text-sm text-red-500">{addError}</p>}
 
               {results && results.length > 0 && (
                 <ul className="space-y-3">
