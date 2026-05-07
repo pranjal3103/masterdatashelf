@@ -11,6 +11,16 @@
 - **Tailwind CSS v4** — uses `@import "tailwindcss"` in globals.css, not the old `@tailwind` directives. No `tailwind.config.ts` file needed.
 - **papaparse** installed for CSV parsing (`npm install papaparse @types/papaparse`).
 
+### Design system (Modern Bookish — current)
+- **Fonts:** Newsreader (headings, serif) + Manrope (body, UI, labels) — loaded via `next/font/google`, variables `--font-newsreader` / `--font-manrope`
+- **Colors:** primary `#04152e` (deep navy), accent `#99462a` (terracotta), surface `#faf9f5` (soft cream), surface-container `#efeeea`, outline `#75777e`, on-surface-variant `#44474d`
+- **Radius:** 4px standard (`rounded`), 8px book covers (`rounded-lg`), 12px cards/widgets (`rounded-xl`)
+- **Spacing:** 4px unit, 20px container margins, 16px gutters
+- **CSS tokens:** defined in `app/globals.css` as `:root` vars (`--primary`, `--accent`, `--surface-*`, `--outline`, etc.) and exposed to Tailwind via `@theme inline`
+- **Shelf badges:** sage tint for read, navy tint for to-read, terracotta tint for currently-reading, neutral for owned
+- **Design reference:** Stitch project "Shelf Insights" (project ID `14114922170961461471`) — screens for Home, Insights, Add Book, ISBN Upload, Manual Entry
+- **Skills installed globally** via `npx skills add`: `emilkowalski/skill` (animation polish), `leonxlnx/taste-skill` (12 design taste skills), `pbakaus/impeccable` (full UI redesign coverage)
+
 ### Database
 - Migration file: `supabase/migrations/001_initial_schema.sql`
 - Uses `gen_random_uuid()` not `uuid_generate_v4()` — the uuid-ossp extension is not available on this Supabase project.
@@ -24,10 +34,9 @@
 - `lib/supabase/client.ts` = browser client, `lib/supabase/server.ts` = server client (async cookies).
 - Supabase anon key format is `sb_publishable_...` (newer Supabase key format, not the old `eyJ...` JWT format).
 
-### Deployment (pending)
-- GitHub repo not yet created — git not installed on this machine.
-- Vercel deploy deferred until after Phase 2 (CSV import) completes — now ready to deploy after Phase 5.
-- To deploy: install git → `git init && git add . && git commit` → create GitHub repo → push → connect to Vercel → add env vars.
+### Deployment
+- Deployed to Vercel, connected to GitHub repo on main branch (auto-deploys on push).
+- Git is installed and working. Project is on D drive (moved from C drive).
 
 ### Phase completion status
 - ✅ Phase 1 — Foundation (Next.js scaffold, Supabase schema, magic-link auth, empty dashboard)
@@ -35,10 +44,11 @@
 - ✅ Phase 3 — Shelf views (sidebar nav, book cover grids, search, sort, pagination)
 - ✅ Phase 4 — Manual add flow (Open Library search, bulk ISBN add, FAB button, sidebar count updates)
 - ✅ Phase 5 — Book detail + author graph (book detail page, author page with stats, cross-shelf badges, clickable author names)
-- ⬜ Phase 6 — Genre tagging via LLM
-- ⬜ Phase 7 — Analytics dashboard
-- ⬜ Phase 8 — Recommendations
-- ⬜ Phase 9 — Polish
+- ✅ Phase 6 — Genre tagging via LLM (`components/genre-tagger.tsx`, `app/actions/tag-genres.ts` — batches of 20, Claude Haiku, progress bar, re-runnable from Settings)
+- ✅ Phase 7 — Analytics dashboard (year bar chart with drilldown, top-line metrics, pace vs last year, recently finished/added strips; `app/(app)/dashboard/page.tsx`, `components/reading-chart.tsx`)
+- ✅ Phase 8 — Recommendations ("Your next read" widget on dashboard, "If you liked this" on book detail, 7-day cache, library/Amazon/Open Library links; `components/next-read-widget.tsx`, `components/similar-books-widget.tsx`, `app/actions/recommendations.ts`)
+- ✅ Phase 9 — Polish (warm cream background, serif/sans typography, accent color, fadeInUp animations with staggered delays, loading skeletons throughout)
+- ✅ Phase 10 — Design overhaul (Modern Bookish system: Newsreader + Manrope fonts, deep navy #04152e primary, terracotta #99462a accent, cream #faf9f5 surface, full CSS token set; skills installed via `npx skills add`)
 
 ---
 
