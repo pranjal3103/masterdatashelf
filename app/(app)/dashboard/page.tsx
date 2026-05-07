@@ -30,9 +30,9 @@ type RecentBook = {
 
 function StatCard({ value, label }: { value: string | number; label: string }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 px-5 py-4 shadow-sm text-center min-w-[90px]">
-      <p className="text-2xl font-serif font-semibold text-gray-900">{value}</p>
-      <p className="text-xs text-gray-400 mt-0.5 leading-snug">{label}</p>
+    <div className="rounded-xl px-5 py-4 shadow-sm text-center min-w-[90px]" style={{ backgroundColor: '#efeeea', border: '1px solid #e9e8e4' }}>
+      <p className="text-2xl font-serif font-semibold" style={{ color: '#04152e' }}>{value}</p>
+      <p className="text-xs mt-0.5 leading-snug" style={{ color: '#75777e' }}>{label}</p>
     </div>
   )
 }
@@ -194,7 +194,7 @@ export default async function DashboardPage() {
         <section className="mb-8 animate-fade-in-delay-3">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Recently finished</h2>
-            <Link href="/shelves/read" className="text-xs hover:underline" style={{ color: '#2C5F2D' }}>
+            <Link href="/shelves/read" className="text-xs hover:underline" style={{ color: '#99462a' }}>
               See all →
             </Link>
           </div>

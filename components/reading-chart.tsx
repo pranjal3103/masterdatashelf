@@ -25,8 +25,8 @@ export type YearStat = {
   books: DrillBook[]
 }
 
-const ACCENT = '#2C5F2D'
-const ACCENT_LIGHT = '#4a8c4c'
+const ACCENT = '#99462a'
+const ACCENT_LIGHT = '#c4694a'
 
 function CoverImg({ src, title }: { src: string | null; title: string }) {
   const [err, setErr] = useState(false)

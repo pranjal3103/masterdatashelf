@@ -1,17 +1,18 @@
 import type { Metadata } from 'next'
-import { Inter, Fraunces } from 'next/font/google'
+import { Manrope, Newsreader } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({
-  variable: '--font-inter',
+const manrope = Manrope({
+  variable: '--font-manrope',
   subsets: ['latin'],
   display: 'swap',
 })
 
-const fraunces = Fraunces({
-  variable: '--font-fraunces',
+const newsreader = Newsreader({
+  variable: '--font-newsreader',
   subsets: ['latin'],
   display: 'swap',
+  style: ['normal', 'italic'],
 })
 
 export const metadata: Metadata = {
@@ -25,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable} h-full antialiased`}>
+    <html lang="en" className={`${manrope.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="min-h-full">{children}</body>
     </html>
   )

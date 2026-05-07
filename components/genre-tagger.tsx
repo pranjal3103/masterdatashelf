@@ -82,7 +82,7 @@ export default function GenreTagger() {
           <button
             onClick={handleStart}
             className="px-4 py-2 text-sm font-medium text-white rounded-lg transition-opacity hover:opacity-90"
-            style={{ backgroundColor: '#2C5F2D' }}
+            style={{ backgroundColor: '#04152e' }}
           >
             Tag {untaggedCount.toLocaleString()} books with Claude Haiku
           </button>
@@ -98,7 +98,7 @@ export default function GenreTagger() {
           <div className="w-full bg-gray-100 rounded-full h-2">
             <div
               className="h-2 rounded-full transition-all duration-500"
-              style={{ backgroundColor: '#2C5F2D', width: `${pct}%` }}
+              style={{ backgroundColor: '#04152e', width: `${pct}%` }}
             />
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function GenreTagger() {
       )}
 
       {done && (
-        <p className="text-sm font-medium" style={{ color: '#2C5F2D' }}>
+        <p className="text-sm font-medium" style={{ color: '#04152e' }}>
           ✓ All done — {taggedCount.toLocaleString()} books now have genre tags.
         </p>
       )}

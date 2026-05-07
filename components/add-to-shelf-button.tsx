@@ -45,7 +45,7 @@ export default function AddToShelfButton({
   if (added) {
     const label = ALL_SHELVES.find((s) => s.value === added)?.label
     return (
-      <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: '#d1fae5', color: '#2C5F2D' }}>
+      <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ backgroundColor: '#d4e8d4', color: '#3a4b3c' }}>
         ✓ Added to {label}
       </span>
     )
@@ -56,7 +56,7 @@ export default function AddToShelfButton({
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={isPending}
-        className="text-xs px-2 py-0.5 rounded-full border border-dashed border-gray-300 text-gray-400 hover:border-green-700 hover:text-green-700 transition-colors disabled:opacity-50"
+        className="text-xs px-2 py-0.5 rounded border border-dashed transition-colors disabled:opacity-50" style={{ borderColor: '#c5c6ce', color: '#75777e' }}
       >
         + shelf
       </button>

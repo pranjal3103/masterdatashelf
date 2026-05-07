@@ -31,12 +31,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#FAF7F2' }}>
+    <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#faf9f5' }}>
       <div className="w-full max-w-sm">
-        <h1 className="text-3xl font-serif text-gray-900 mb-2 text-center">
+        <h1 className="text-3xl font-serif mb-2 text-center" style={{ color: '#04152e' }}>
           Masterdatashelf
         </h1>
-        <p className="text-sm text-gray-500 text-center mb-8">
+        <p className="text-sm text-center mb-8" style={{ color: '#75777e' }}>
           Your personal reading library
         </p>
 
@@ -62,7 +62,7 @@ export default function LoginPage() {
                 required
                 autoFocus
                 placeholder="you@example.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent bg-white"
+                className="w-full px-3 py-2 rounded text-gray-900 placeholder-gray-400 focus:outline-none bg-white" style={{ border: '1px solid #c5c6ce' }}
               />
             </div>
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading || !email}
               className="w-full py-2 px-4 rounded-md text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#2C5F2D' }}
+              style={{ backgroundColor: '#04152e' }}
             >
               {loading ? 'Sending…' : 'Send magic link'}
             </button>

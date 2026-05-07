@@ -1,10 +1,10 @@
 import type { ShelfType } from '@/lib/csv/types'
 
 const SHELF_BADGES: Record<ShelfType, { label: string; bg: string; text: string }> = {
-  'read':              { label: 'Read',              bg: '#dcfce7', text: '#15803d' },
-  'to-read':           { label: 'To Read',           bg: '#eff6ff', text: '#2563eb' },
-  'currently-reading': { label: 'Currently Reading', bg: '#fef3c7', text: '#b45309' },
-  'owned':             { label: 'Owned',             bg: '#f3e8ff', text: '#7c3aed' },
+  'read':              { label: 'Read',              bg: '#d4e8d4', text: '#3a4b3c' },
+  'to-read':           { label: 'To Read',           bg: '#d6e3ff', text: '#384763' },
+  'currently-reading': { label: 'Reading',           bg: '#ffdbd0', text: '#762c12' },
+  'owned':             { label: 'Owned',             bg: '#e3e2df', text: '#44474d' },
 }
 
 export function getShelfBadge(shelf: string) {

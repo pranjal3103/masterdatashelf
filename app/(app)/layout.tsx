@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const counts = await getShelfCounts()
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: '#FAF7F2' }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: '#faf9f5' }}>
       <Sidebar counts={counts} />
       <div className="flex-1 min-w-0 flex flex-col">
         {children}

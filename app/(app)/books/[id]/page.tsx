@@ -113,7 +113,7 @@ export default async function BookDetailPage({
           <Link
             href={`/authors/${encodeURIComponent(book.author_primary)}`}
             className="text-base font-medium hover:underline transition-colors"
-            style={{ color: '#2C5F2D' }}
+            style={{ color: '#99462a' }}
           >
             {book.author_primary}
           </Link>
@@ -121,7 +121,7 @@ export default async function BookDetailPage({
             <span className="text-sm text-gray-400 ml-2">
               with {book.additional_authors.map((a: string) => (
                 <Link key={a} href={`/authors/${encodeURIComponent(a)}`}
-                  className="hover:underline ml-1" style={{ color: '#2C5F2D' }}>
+                  className="hover:underline ml-1" style={{ color: '#99462a' }}>
                   {a}
                 </Link>
               ))}
@@ -133,7 +133,7 @@ export default async function BookDetailPage({
             {shelves.map((s) => {
               const b = getShelfBadge(s)
               return b ? (
-                <span key={s} className="text-xs px-2 py-0.5 rounded-full font-medium"
+                <span key={s} className="text-xs px-2 py-0.5 rounded font-semibold tracking-wide"
                   style={{ backgroundColor: b.bg, color: b.text }}>
                   {b.label}
                 </span>
@@ -146,7 +146,7 @@ export default async function BookDetailPage({
           {genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-3">
               {genres.map((g) => (
-                <span key={g} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
+                <span key={g} className="text-xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: '#efeeea', color: '#44474d' }}>
                   {GENRE_LABELS[g] ?? g}
                 </span>
               ))}
@@ -198,7 +198,7 @@ export default async function BookDetailPage({
         <section className="mb-10">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My review</h2>
           <blockquote className="text-gray-700 leading-relaxed whitespace-pre-line border-l-2 pl-4"
-            style={{ borderColor: '#2C5F2D' }}>
+            style={{ borderColor: '#99462a' }}>
             {review}
           </blockquote>
         </section>
@@ -221,7 +221,7 @@ export default async function BookDetailPage({
               </Link>
             </h2>
             <Link href={`/authors/${encodeURIComponent(book.author_primary)}`}
-              className="text-xs hover:underline" style={{ color: '#2C5F2D' }}>
+              className="text-xs hover:underline" style={{ color: '#99462a' }}>
               See all →
             </Link>
           </div>

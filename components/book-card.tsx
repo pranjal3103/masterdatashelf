@@ -23,8 +23,8 @@ function CoverImg({ src, title }: { src: string | null; title: string }) {
   const [err, setErr] = useState(false)
   if (!src || err) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center" style={{ backgroundColor: '#E8E0D5' }}>
-        <p className="text-xs font-medium text-gray-600 line-clamp-3 leading-tight">{title}</p>
+      <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center" style={{ backgroundColor: '#e3e2df' }}>
+        <p className="text-xs font-medium line-clamp-3 leading-tight" style={{ color: '#44474d' }}>{title}</p>
       </div>
     )
   }
@@ -45,15 +45,15 @@ export default function BookCard({ id, title, author, coverUrl, rating, shelves,
     <motion.div className="group" whileHover={{ y: -4, transition: { duration: 0.15, ease: 'easeOut' } }}>
       {/* Cover + title → book detail */}
       <Link href={`/books/${id}`} className="block">
-        <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100 shadow-sm group-hover:shadow-md transition-shadow">
+        <div className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-sm group-hover:shadow-md transition-shadow" style={{ backgroundColor: '#e3e2df' }}>
           <CoverImg src={coverUrl} title={title} />
           {rating !== null && rating > 0 && (
-            <div className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded-sm">
+            <div className="absolute bottom-1.5 right-1.5 text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: 'rgba(4,21,46,0.75)', color: '#ffffff' }}>
               {'★'.repeat(rating)}
             </div>
           )}
         </div>
-        <p className="mt-1.5 text-xs font-medium text-gray-800 line-clamp-2 leading-snug px-0.5">{title}</p>
+        <p className="mt-1.5 text-xs font-medium line-clamp-2 leading-snug px-0.5" style={{ color: '#1b1c1a' }}>{title}</p>
       </Link>
 
       {/* Author → author page (separate link, avoids nested <a>) */}
@@ -62,7 +62,7 @@ export default function BookCard({ id, title, author, coverUrl, rating, shelves,
         className="block px-0.5 mt-0.5"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-xs text-gray-400 hover:text-gray-600 hover:underline line-clamp-1 transition-colors">{author}</p>
+        <p className="text-xs line-clamp-1 transition-colors hover:underline" style={{ color: '#75777e' }}>{author}</p>
       </Link>
 
       {/* Shelf badges (shown on author page / book detail "other books") */}
@@ -72,7 +72,7 @@ export default function BookCard({ id, title, author, coverUrl, rating, shelves,
             const badge = getShelfBadge(s)
             if (!badge) return null
             return (
-              <span key={s} className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+              <span key={s} className="text-xs px-1.5 py-0.5 rounded font-semibold tracking-wide"
                 style={{ backgroundColor: badge.bg, color: badge.text }}>
                 {badge.label}
               </span>
@@ -85,7 +85,7 @@ export default function BookCard({ id, title, author, coverUrl, rating, shelves,
       {genres && genres.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1 px-0.5">
           {genres.slice(0, 2).map((g) => (
-            <span key={g} className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+            <span key={g} className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ backgroundColor: '#efeeea', color: '#44474d' }}>
               {GENRE_LABELS[g as Genre] ?? g}
             </span>
           ))}

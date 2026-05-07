@@ -1,23 +1,49 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAF7F2;
-  --foreground: #1a1a1a;
-  --accent: #2C5F2D;
+  --background: #faf9f5;
+  --foreground: #1b1c1a;
+
+  --primary: #04152e;
+  --primary-container: #1a2a44;
+  --on-primary: #ffffff;
+
+  --accent: #99462a;
+  --accent-container: #fe9572;
+  --on-accent: #ffffff;
+
+  --tertiary: #1e2e21;
+
+  --surface: #faf9f5;
+  --surface-dim: #dbdad6;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f4f4f0;
+  --surface-container: #efeeea;
+  --surface-container-high: #e9e8e4;
+
+  --on-surface: #1b1c1a;
+  --on-surface-variant: #44474d;
+  --outline: #75777e;
+  --outline-variant: #c5c6ce;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
   --color-accent: var(--accent);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-fraunces);
+  --color-surface: var(--surface);
+  --color-surface-container: var(--surface-container);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --font-sans: var(--font-manrope);
+  --font-serif: var(--font-newsreader);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
 }
 
 /* ── Fade-in animation ───────────────────────────────────────────────────── */

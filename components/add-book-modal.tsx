@@ -238,7 +238,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                 tab === t ? 'text-white font-medium' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
               }`}
-              style={tab === t ? { backgroundColor: '#2C5F2D' } : {}}
+              style={tab === t ? { backgroundColor: '#04152e' } : {}}
             >
               {t === 'search' ? 'Search' : 'Bulk ISBN'}
             </button>
@@ -277,7 +277,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
                   type="submit"
                   disabled={searching || !searchTitle.trim()}
                   className="w-full py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#2C5F2D' }}
+                  style={{ backgroundColor: '#04152e' }}
                 >
                   {searching ? 'Searching…' : 'Search Open Library'}
                 </button>
@@ -313,14 +313,14 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
                                 onClick={() => handleAdd(candidate)}
                                 disabled={adding}
                                 className="text-xs font-medium px-3 py-1 rounded-md text-white transition-colors disabled:opacity-50"
-                                style={{ backgroundColor: '#2C5F2D' }}
+                                style={{ backgroundColor: '#04152e' }}
                               >
                                 {adding ? 'Adding…' : 'Add'}
                               </button>
                             </div>
                           )}
                           {added && (
-                            <p className="text-xs font-medium mt-2" style={{ color: '#2C5F2D' }}>
+                            <p className="text-xs font-medium mt-2" style={{ color: '#04152e' }}>
                               ✓ Added to {SHELF_OPTIONS.find(o => o.value === (shelfForResult[candidate.olKey] ?? 'owned'))?.label}
                             </p>
                           )}
@@ -361,7 +361,7 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
                   onClick={handleBulkAdd}
                   disabled={bulkRunning || !bulkText.trim()}
                   className="ml-auto px-4 py-1.5 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50"
-                  style={{ backgroundColor: '#2C5F2D' }}
+                  style={{ backgroundColor: '#04152e' }}
                 >
                   {bulkRunning ? 'Adding…' : 'Add all'}
                 </button>

@@ -105,7 +105,7 @@ export default function ImportCSV() {
         <div className="space-y-3">
           <p className="text-sm text-gray-700">Found <span className="font-semibold text-gray-900">{parsedBooks.length.toLocaleString()}</span> books. Ready to import.</p>
           <div className="flex gap-2">
-            <button onClick={handleImport} className="px-4 py-2 text-sm font-medium text-white rounded-md" style={{ backgroundColor: '#2C5F2D' }}>Start import</button>
+            <button onClick={handleImport} className="px-4 py-2 text-sm font-medium text-white rounded-md" style={{ backgroundColor: '#04152e' }}>Start import</button>
             <button onClick={reset} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200">Cancel</button>
           </div>
         </div>
@@ -118,7 +118,7 @@ export default function ImportCSV() {
             <span>{progress.current.toLocaleString()} / {progress.total.toLocaleString()} ({progressPercent}%)</span>
           </div>
           <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-            <div className="h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%`, backgroundColor: '#2C5F2D' }} />
+            <div className="h-2 rounded-full transition-all duration-300" style={{ width: `${progressPercent}%`, backgroundColor: '#04152e' }} />
           </div>
         </div>
       )}
