@@ -17,6 +17,21 @@ type OLDoc = {
   publisher?: string[]
 }
 
+// ── Google Books types ────────────────────────────────────────────────────────
+
+type GBVolume = {
+  title?: string
+  authors?: string[]
+  publisher?: string
+  publishedDate?: string
+  industryIdentifiers?: { type: string; identifier: string }[]
+  imageLinks?: { thumbnail?: string }
+}
+
+type GBItem = { volumeInfo: GBVolume }
+
+// ── Candidate ─────────────────────────────────────────────────────────────────
+
 type Candidate = {
   olKey: string
   title: string
@@ -75,16 +90,52 @@ async function searchOpenLibrary(title: string, author: string): Promise<Candida
   return data.docs.slice(0, 5).map(docToCandidate)
 }
 
+async function lookupISBNOnOpenLibrary(clean: string): Promise<Candidate | null> {
+  try {
+    const res = await fetch(
+      `https://openlibrary.org/search.json?isbn=${clean}&limit=1&fields=key,title,author_name,first_publish_year,isbn,cover_i,publisher`
+    )
+    if (!res.ok) return null
+    const data: { docs: OLDoc[] } = await res.json()
+    if (!data.docs.length) return null
+    return docToCandidate(data.docs[0])
+  } catch {
+    return null
+  }
+}
+
+async function lookupISBNOnGoogleBooks(clean: string): Promise<Candidate | null> {
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${clean}&maxResults=1`
+    )
+    if (!res.ok) return null
+    const data: { items?: GBItem[] } = await res.json()
+    if (!data.items?.length) return null
+    const vol = data.items[0].volumeInfo
+    const isbn13 = vol.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier ?? null
+    const isbn10 = vol.industryIdentifiers?.find((i) => i.type === 'ISBN_10')?.identifier ?? null
+    const coverUrl = vol.imageLinks?.thumbnail?.replace('http:', 'https:') ?? null
+    return {
+      olKey: `gb-${clean}`,
+      title: vol.title ?? 'Unknown title',
+      author: vol.authors?.[0] ?? 'Unknown author',
+      year: vol.publishedDate ? parseInt(vol.publishedDate.slice(0, 4)) : null,
+      isbn13: isbn13 ?? (clean.length === 13 ? clean : null),
+      isbn10: isbn10 ?? (clean.length === 10 ? clean : null),
+      coverUrl,
+      publisher: vol.publisher ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+// Tries Open Library first, falls back to Google Books.
 async function lookupISBN(isbn: string): Promise<Candidate | null> {
   const clean = isbn.replace(/[^0-9X]/gi, '')
   if (!clean) return null
-  const res = await fetch(
-    `https://openlibrary.org/search.json?isbn=${clean}&limit=1&fields=key,title,author_name,first_publish_year,isbn,cover_i,publisher`
-  )
-  if (!res.ok) return null
-  const data: { docs: OLDoc[] } = await res.json()
-  if (!data.docs.length) return null
-  return docToCandidate(data.docs[0])
+  return (await lookupISBNOnOpenLibrary(clean)) ?? (await lookupISBNOnGoogleBooks(clean))
 }
 
 // ── CoverImage ────────────────────────────────────────────────────────────────
@@ -105,9 +156,26 @@ function CoverImage({ src, title }: { src: string | null; title: string }) {
   )
 }
 
-// ── Main modal component ──────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type Tab = 'search' | 'bulk'
+
+type BulkResult = {
+  isbn: string
+  title: string
+  status: 'added' | 'failed' | 'not-found'
+}
+
+type ManualState = {
+  open: boolean
+  title: string
+  author: string
+  adding: boolean
+  added: boolean
+  error: string | null
+}
+
+// ── Main modal component ──────────────────────────────────────────────────────
 
 export default function AddBookModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('search')
@@ -119,7 +187,6 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
   const [results, setResults] = useState<Candidate[] | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  // Per-result state: which shelf is selected for each result
   const [shelfForResult, setShelfForResult] = useState<Record<string, ShelfType>>({})
   const [addingKey, setAddingKey] = useState<string | null>(null)
   const [addedKeys, setAddedKeys] = useState<Set<string>>(new Set())
@@ -129,7 +196,8 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
   const [bulkText, setBulkText] = useState('')
   const [bulkShelf, setBulkShelf] = useState<ShelfType>('owned')
   const [bulkRunning, setBulkRunning] = useState(false)
-  const [bulkDone, setBulkDone] = useState<{ isbn: string; title: string; status: 'added' | 'failed' }[]>([])
+  const [bulkDone, setBulkDone] = useState<BulkResult[]>([])
+  const [manualEntries, setManualEntries] = useState<Record<string, ManualState>>({})
 
   const router = useRouter()
   const titleRef = useRef<HTMLInputElement>(null)
@@ -168,7 +236,6 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
     setAddingKey(null)
     if (result.success) {
       setAddedKeys((prev) => new Set([...prev, candidate.olKey]))
-      // Navigate to the shelf where the book was added so it's immediately visible.
       setTimeout(() => {
         router.push(`/shelves/${shelf}`)
         onClose()
@@ -187,13 +254,15 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
 
     setBulkRunning(true)
     setBulkDone([])
-    const results: typeof bulkDone = []
+    setManualEntries({})
+    const results: BulkResult[] = []
 
     for (const isbn of isbns) {
       try {
         const candidate = await lookupISBN(isbn)
         if (!candidate) {
-          results.push({ isbn, title: '—', status: 'failed' })
+          results.push({ isbn, title: '—', status: 'not-found' })
+          setBulkDone([...results])
           continue
         }
         const book: AddBookInput = {
@@ -214,6 +283,43 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
     }
     setBulkRunning(false)
     router.refresh()
+  }
+
+  function openManualEntry(isbn: string) {
+    setManualEntries((prev) => ({
+      ...prev,
+      [isbn]: { open: true, title: '', author: '', adding: false, added: false, error: null },
+    }))
+  }
+
+  async function submitManualEntry(isbn: string) {
+    const entry = manualEntries[isbn]
+    if (!entry?.title.trim()) return
+
+    setManualEntries((prev) => ({ ...prev, [isbn]: { ...prev[isbn], adding: true, error: null } }))
+    const clean = isbn.replace(/[^0-9X]/gi, '')
+    const book: AddBookInput = {
+      title: entry.title.trim(),
+      author_primary: entry.author.trim() || 'Unknown author',
+      isbn13: clean.length === 13 ? clean : null,
+      isbn10: clean.length === 10 ? clean : null,
+      year_published: null,
+      cover_url: clean.length === 13 ? `https://covers.openlibrary.org/b/isbn/${clean}-M.jpg` : null,
+      publisher: null,
+    }
+    const res = await addBookToShelf(book, bulkShelf)
+    if (res.success) {
+      setManualEntries((prev) => ({ ...prev, [isbn]: { ...prev[isbn], adding: false, added: true } }))
+      setBulkDone((prev) =>
+        prev.map((r) => r.isbn === isbn ? { ...r, title: entry.title.trim(), status: 'added' } : r)
+      )
+      router.refresh()
+    } else {
+      setManualEntries((prev) => ({
+        ...prev,
+        [isbn]: { ...prev[isbn], adding: false, error: res.error ?? 'Failed to add' },
+      }))
+    }
   }
 
   return (
@@ -252,27 +358,23 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
           {tab === 'search' && (
             <div className="space-y-4">
               <form onSubmit={handleSearch} className="space-y-3">
-                <div>
-                  <input
-                    ref={titleRef}
-                    type="text"
-                    placeholder="Title (required)"
-                    value={searchTitle}
-                    onChange={(e) => setSearchTitle(e.target.value)}
-                    required
-                    autoFocus
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    placeholder="Author (optional)"
-                    value={searchAuthor}
-                    onChange={(e) => setSearchAuthor(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700"
-                  />
-                </div>
+                <input
+                  ref={titleRef}
+                  type="text"
+                  placeholder="Title (required)"
+                  value={searchTitle}
+                  onChange={(e) => setSearchTitle(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700"
+                />
+                <input
+                  type="text"
+                  placeholder="Author (optional)"
+                  value={searchAuthor}
+                  onChange={(e) => setSearchAuthor(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-700"
+                />
                 <button
                   type="submit"
                   disabled={searching || !searchTitle.trim()}
@@ -368,10 +470,73 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
               </div>
 
               {bulkDone.length > 0 && (
-                <ul className="space-y-1 text-xs max-h-48 overflow-y-auto">
-                  {bulkDone.map((r, i) => (
-                    <li key={i} className={r.status === 'added' ? 'text-green-700' : 'text-red-500'}>
-                      {r.status === 'added' ? '✓' : '✗'} {r.isbn} {r.title !== '—' ? `— ${r.title}` : '— not found'}
+                <ul className="space-y-2 text-xs max-h-64 overflow-y-auto">
+                  {bulkDone.map((r) => (
+                    <li key={r.isbn}>
+                      <div className={
+                        r.status === 'added' ? 'text-green-700' :
+                        r.status === 'not-found' ? 'text-amber-600' :
+                        'text-red-500'
+                      }>
+                        {r.status === 'added' ? '✓' : r.status === 'not-found' ? '?' : '✗'}{' '}
+                        {r.isbn}
+                        {r.title !== '—' ? ` — ${r.title}` : r.status === 'not-found' ? ' — not found' : ' — error'}
+                      </div>
+
+                      {r.status === 'not-found' && !manualEntries[r.isbn]?.added && (
+                        <div className="mt-1 ml-3">
+                          {!manualEntries[r.isbn]?.open ? (
+                            <button
+                              onClick={() => openManualEntry(r.isbn)}
+                              className="text-xs underline text-gray-400 hover:text-gray-700"
+                            >
+                              Enter details manually
+                            </button>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 mt-1">
+                              <input
+                                type="text"
+                                placeholder="Title (required)"
+                                value={manualEntries[r.isbn].title}
+                                onChange={(e) =>
+                                  setManualEntries((prev) => ({
+                                    ...prev,
+                                    [r.isbn]: { ...prev[r.isbn], title: e.target.value },
+                                  }))
+                                }
+                                className="px-2 py-1 border border-gray-200 rounded bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 w-full"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Author (optional)"
+                                value={manualEntries[r.isbn].author}
+                                onChange={(e) =>
+                                  setManualEntries((prev) => ({
+                                    ...prev,
+                                    [r.isbn]: { ...prev[r.isbn], author: e.target.value },
+                                  }))
+                                }
+                                className="px-2 py-1 border border-gray-200 rounded bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 w-full"
+                              />
+                              {manualEntries[r.isbn].error && (
+                                <p className="text-red-500">{manualEntries[r.isbn].error}</p>
+                              )}
+                              <button
+                                onClick={() => submitManualEntry(r.isbn)}
+                                disabled={manualEntries[r.isbn].adding || !manualEntries[r.isbn].title.trim()}
+                                className="self-start px-2 py-1 font-medium text-white rounded disabled:opacity-50"
+                                style={{ backgroundColor: '#04152e' }}
+                              >
+                                {manualEntries[r.isbn].adding ? 'Adding…' : 'Add'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {r.status === 'not-found' && manualEntries[r.isbn]?.added && (
+                        <div className="mt-0.5 ml-3 text-green-700">✓ Added manually</div>
+                      )}
                     </li>
                   ))}
                 </ul>
