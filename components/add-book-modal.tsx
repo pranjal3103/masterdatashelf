@@ -307,17 +307,24 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
       cover_url: clean.length === 13 ? `https://covers.openlibrary.org/b/isbn/${clean}-M.jpg` : null,
       publisher: null,
     }
-    const res = await addBookToShelf(book, bulkShelf)
-    if (res.success) {
-      setManualEntries((prev) => ({ ...prev, [isbn]: { ...prev[isbn], adding: false, added: true } }))
-      setBulkDone((prev) =>
-        prev.map((r) => r.isbn === isbn ? { ...r, title: entry.title.trim(), status: 'added' } : r)
-      )
-      router.refresh()
-    } else {
+    try {
+      const res = await addBookToShelf(book, bulkShelf)
+      if (res.success) {
+        setManualEntries((prev) => ({ ...prev, [isbn]: { ...prev[isbn], adding: false, added: true } }))
+        setBulkDone((prev) =>
+          prev.map((r) => r.isbn === isbn ? { ...r, title: entry.title.trim(), status: 'added' } : r)
+        )
+        router.refresh()
+      } else {
+        setManualEntries((prev) => ({
+          ...prev,
+          [isbn]: { ...prev[isbn], adding: false, error: res.error ?? 'Failed to add' },
+        }))
+      }
+    } catch (err) {
       setManualEntries((prev) => ({
         ...prev,
-        [isbn]: { ...prev[isbn], adding: false, error: res.error ?? 'Failed to add' },
+        [isbn]: { ...prev[isbn], adding: false, error: err instanceof Error ? err.message : 'Unexpected error — try again' },
       }))
     }
   }
