@@ -3,9 +3,10 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { addBookToShelf, type AddBookInput } from '@/app/actions/add-book'
+import type { ISBNResult } from '@/app/api/isbn/[isbn]/route'
 import type { ShelfType } from '@/lib/csv/types'
 
-// ── Open Library types ────────────────────────────────────────────────────────
+// ── Open Library types (search tab only) ─────────────────────────────────────
 
 type OLDoc = {
   key: string
@@ -16,19 +17,6 @@ type OLDoc = {
   cover_i?: number
   publisher?: string[]
 }
-
-// ── Google Books types ────────────────────────────────────────────────────────
-
-type GBVolume = {
-  title?: string
-  authors?: string[]
-  publisher?: string
-  publishedDate?: string
-  industryIdentifiers?: { type: string; identifier: string }[]
-  imageLinks?: { thumbnail?: string }
-}
-
-type GBItem = { volumeInfo: GBVolume }
 
 // ── Candidate ─────────────────────────────────────────────────────────────────
 
@@ -90,52 +78,17 @@ async function searchOpenLibrary(title: string, author: string): Promise<Candida
   return data.docs.slice(0, 5).map(docToCandidate)
 }
 
-async function lookupISBNOnOpenLibrary(clean: string): Promise<Candidate | null> {
-  try {
-    const res = await fetch(
-      `https://openlibrary.org/search.json?isbn=${clean}&limit=1&fields=key,title,author_name,first_publish_year,isbn,cover_i,publisher`
-    )
-    if (!res.ok) return null
-    const data: { docs: OLDoc[] } = await res.json()
-    if (!data.docs.length) return null
-    return docToCandidate(data.docs[0])
-  } catch {
-    return null
-  }
-}
-
-async function lookupISBNOnGoogleBooks(clean: string): Promise<Candidate | null> {
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=isbn:${clean}&maxResults=1`
-    )
-    if (!res.ok) return null
-    const data: { items?: GBItem[] } = await res.json()
-    if (!data.items?.length) return null
-    const vol = data.items[0].volumeInfo
-    const isbn13 = vol.industryIdentifiers?.find((i) => i.type === 'ISBN_13')?.identifier ?? null
-    const isbn10 = vol.industryIdentifiers?.find((i) => i.type === 'ISBN_10')?.identifier ?? null
-    const coverUrl = vol.imageLinks?.thumbnail?.replace('http:', 'https:') ?? null
-    return {
-      olKey: `gb-${clean}`,
-      title: vol.title ?? 'Unknown title',
-      author: vol.authors?.[0] ?? 'Unknown author',
-      year: vol.publishedDate ? parseInt(vol.publishedDate.slice(0, 4)) : null,
-      isbn13: isbn13 ?? (clean.length === 13 ? clean : null),
-      isbn10: isbn10 ?? (clean.length === 10 ? clean : null),
-      coverUrl,
-      publisher: vol.publisher ?? null,
-    }
-  } catch {
-    return null
-  }
-}
-
-// Tries Open Library first, falls back to Google Books.
-async function lookupISBN(isbn: string): Promise<Candidate | null> {
+// Lookup via server-side API route: OL → Google Books → isbnsearch.org
+async function lookupISBN(isbn: string): Promise<ISBNResult | null> {
   const clean = isbn.replace(/[^0-9X]/gi, '')
   if (!clean) return null
-  return (await lookupISBNOnOpenLibrary(clean)) ?? (await lookupISBNOnGoogleBooks(clean))
+  try {
+    const res = await fetch(`/api/isbn/${clean}`)
+    if (!res.ok) return null
+    return res.json() as Promise<ISBNResult>
+  } catch {
+    return null
+  }
 }
 
 // ── CoverImage ────────────────────────────────────────────────────────────────
