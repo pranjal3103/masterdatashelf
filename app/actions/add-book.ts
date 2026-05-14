@@ -73,6 +73,20 @@ export async function addBookToShelf(
   return { success: true, bookId }
 }
 
+// Returns the set of isbn13s already on a given shelf — used to skip duplicates in bulk import.
+export async function getShelfISBN13s(shelf: ShelfType): Promise<string[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('shelf_entries')
+    .select('books!inner(isbn13)')
+    .eq('shelf', shelf)
+  return (
+    (data as { books: { isbn13: string | null } }[] | null)
+      ?.map((r) => r.books.isbn13)
+      .filter((isbn): isbn is string => !!isbn) ?? []
+  )
+}
+
 // Add an existing book (by ID) to a new shelf without creating a duplicate book record.
 export async function addShelfEntryToBook(
   bookId: string,

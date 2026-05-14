@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { addBookToShelf, type AddBookInput } from '@/app/actions/add-book'
+import { addBookToShelf, getShelfISBN13s, type AddBookInput } from '@/app/actions/add-book'
 import type { ISBNResult } from '@/app/api/isbn/[isbn]/route'
 import type { ShelfType } from '@/lib/csv/types'
 
@@ -116,7 +116,7 @@ type Tab = 'search' | 'bulk'
 type BulkResult = {
   isbn: string
   title: string
-  status: 'added' | 'failed' | 'not-found'
+  status: 'added' | 'failed' | 'not-found' | 'exists'
 }
 
 type ManualState = {
@@ -210,7 +210,15 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
     setManualEntries({})
     const results: BulkResult[] = []
 
+    const existingISBN13s = new Set(await getShelfISBN13s(bulkShelf))
+
     for (const isbn of isbns) {
+      const clean = isbn.replace(/[^0-9X]/gi, '')
+      if (existingISBN13s.has(clean)) {
+        results.push({ isbn, title: '—', status: 'exists' })
+        setBulkDone([...results])
+        continue
+      }
       try {
         const candidate = await lookupISBN(isbn)
         if (!candidate) {
@@ -435,12 +443,15 @@ export default function AddBookModal({ onClose }: { onClose: () => void }) {
                     <li key={r.isbn}>
                       <div className={
                         r.status === 'added' ? 'text-green-700' :
+                        r.status === 'exists' ? 'text-gray-400' :
                         r.status === 'not-found' ? 'text-amber-600' :
                         'text-red-500'
                       }>
-                        {r.status === 'added' ? '✓' : r.status === 'not-found' ? '?' : '✗'}{' '}
+                        {r.status === 'added' ? '✓' : r.status === 'exists' ? '–' : r.status === 'not-found' ? '?' : '✗'}{' '}
                         {r.isbn}
-                        {r.title !== '—' ? ` — ${r.title}` : r.status === 'not-found' ? ' — not found' : ' — error'}
+                        {r.status === 'exists' ? ' — already in shelf' :
+                         r.title !== '—' ? ` — ${r.title}` :
+                         r.status === 'not-found' ? ' — not found' : ' — error'}
                       </div>
 
                       {r.status === 'not-found' && !manualEntries[r.isbn]?.added && (
